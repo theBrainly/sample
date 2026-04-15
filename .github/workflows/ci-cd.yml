@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI/CD Deploy
 
 on:
   push:
@@ -6,25 +6,30 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: npm install
+      - name: Deploy to Droplet via SSH
+        uses: appleboy/ssh-action@v1.0.0
 
-      - name: Build
-        run: npm run build
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy
-        run: |
-          sshpass -p ${{ secrets.SSH_PASSWORD }} ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.DROPLET_IP }} << EOF
-            cd /path/to/your/application
-            git pull origin main
+          script: |
+            cd /var/www/app || mkdir -p /var/www/app && cd /var/www/app
+
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .
+            else
+              git pull origin main
+            fi
+
             npm install
-            npm run build
-            pm2 restart app
-          EOF
+
+            pm2 restart app || pm2 start server.js --name app
