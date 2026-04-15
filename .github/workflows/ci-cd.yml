@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy to Droplet via SSH
+      - name: Deploy to DigitalOcean Droplet
         uses: appleboy/ssh-action@v1.0.0
 
         with:
@@ -22,14 +22,18 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
 
           script: |
+            # Go to app directory
             cd /var/www/app || mkdir -p /var/www/app && cd /var/www/app
 
+            # Clone if first time, else pull latest code
             if [ ! -d ".git" ]; then
-              git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .
+              git clone https://github.com/theBrainly/sample.git .
             else
               git pull origin main
             fi
 
+            # Install dependencies
             npm install
 
+            # Restart app using PM2
             pm2 restart app || pm2 start server.js --name app
