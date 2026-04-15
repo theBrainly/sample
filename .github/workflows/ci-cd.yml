@@ -22,18 +22,23 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
 
           script: |
-            # Go to app directory
-            cd /var/www/app || mkdir -p /var/www/app && cd /var/www/app
+            cd /var/www
 
-            # Clone if first time, else pull latest code
-            if [ ! -d ".git" ]; then
-              git clone https://github.com/theBrainly/sample.git .
-            else
-              git pull origin main
+            # First time setup
+            if [ ! -d "app" ]; then
+              git clone https://github.com/theBrainly/sample.git app
             fi
+
+            cd app
+
+            # 🔥 Force sync with GitHub (fixes your error)
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
 
             # Install dependencies
             npm install
 
-            # Restart app using PM2
-            pm2 restart app || pm2 start server.js --name app
+            # Restart app
+            pm2 delete app || true
+            pm2 start server.js --name app
